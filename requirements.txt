@@ -1,0 +1,2 @@
+dynamicprompts==0.30.2
+PyYAML>=6.0

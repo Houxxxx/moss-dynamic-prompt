@@ -1,0 +1,12 @@
+[project]
+name = "moss-dynamic-prompt"
+version = "1.0.0"
+description = "Local wildcard expansion, Balanced random selection, and prompt enhancement for ComfyUI."
+dependencies = ["dynamicprompts==0.30.2", "PyYAML>=6.0"]
+
+[project.urls]
+Repository = "https://github.com/Houxxxx/moss-dynamic-prompt"
+
+[tool.comfy]
+PublisherId = "" # Set this to your actual Comfy Registry publisher ID before publishing.
+DisplayName = "MOSS Dynamic Prompt"
