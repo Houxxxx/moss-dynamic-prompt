@@ -49,16 +49,26 @@ def wildcard_manager(folder, sources=None):
                     sources[name] = (path.relative_to(source).as_posix(), None)
             elif path.suffix.lower() in (".yaml", ".yml", ".json"):
                 text = path.read_text(encoding="utf-8-sig")
-                data = json.loads(text) if path.suffix.lower() == ".json" else yaml.safe_load(text)
+                loader_type = yaml.CSafeLoader if yaml.__with_libyaml__ else yaml.SafeLoader
+                if path.suffix.lower() == ".json":
+                    data = json.loads(text)
+                    document = yaml.compose(text, Loader=loader_type) if sources is not None else None
+                else:
+                    loader = loader_type(text)
+                    try:
+                        document = loader.get_single_node()
+                        data = loader.construct_document(document) if document is not None else None
+                    finally:
+                        loader.dispose()
                 prefix = path.parent.relative_to(source).as_posix().strip(".").strip("/")
                 if isinstance(data, dict):
-                    marks = SourceMarks(yaml.compose(text)) if sources is not None else None
+                    marks = SourceMarks(document) if sources is not None else None
                     collections.update(structured_entries(data, prefix, sources, marks, path.relative_to(source).as_posix()))
                 elif isinstance(data, list):
                     name = path.relative_to(source).with_suffix("").as_posix()
                     collections[name] = ListWildcardCollection([x for x in data if isinstance(x, str)])
                     if sources is not None:
-                        sources[name] = (path.relative_to(source).as_posix(), SourceMarks(yaml.compose(text)))
+                        sources[name] = (path.relative_to(source).as_posix(), SourceMarks(document))
     return WildcardManager(root_map={"": [collections]})
 
 
@@ -99,6 +109,8 @@ class MOSSLocalDynamicPrompt:
             prompts = [""]
         elif mode == "all_combinations":
             manager = wildcard_manager(wildcard_folder)
+            manager.sort_wildcards = False
+            manager.shuffle_wildcards = False
             prompts = CombinatorialPromptGenerator(wildcard_manager=manager).generate(text, max_prompts=None)
         elif balanced:
             manager = wildcard_manager(wildcard_folder, sources)
