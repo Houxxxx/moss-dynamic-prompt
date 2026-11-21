@@ -157,11 +157,17 @@ class MOSSJSONEnhancer:
                     payload = json.dumps(data, ensure_ascii=False)
                 started = time.perf_counter()
                 def generate(request):
-                    return TextGenerate.execute(clip[0], request, max_length[0],
-                    {'sampling_mode': 'on', 'temperature': temperature[0], 'top_k': 64,
-                     'top_p': 0.95, 'min_p': 0.05, 'repetition_penalty': 1.05,
-                     'presence_penalty': 0.0, 'seed': seed[0]},
-                    thinking=thinking[0], use_default_template=True, mtp='off', system_prompt=json_system[0])[0]
+                    sampling = {'sampling_mode': 'on', 'temperature': temperature[0], 'top_k': 64,
+                                'top_p': 0.95, 'min_p': 0.05, 'repetition_penalty': 1.05,
+                                'presence_penalty': 0.0, 'seed': seed[0]}
+                    output = TextGenerate.execute(clip[0], request, max_length[0], sampling,
+                                                  thinking=thinking[0], use_default_template=True,
+                                                  mtp='off', system_prompt=json_system[0])
+                    if not output.result[0].strip() and output.result[1].strip():
+                        output = TextGenerate.execute(clip[0], request, max_length[0], sampling,
+                                                      thinking=False, use_default_template=True,
+                                                      mtp='off', system_prompt=json_system[0])
+                    return output.result[0]
                 raw = generate(payload)
                 if not raw:
                     raise ValueError('MOSS JSON: empty/truncated generation; increase max_length. No image generated.')
